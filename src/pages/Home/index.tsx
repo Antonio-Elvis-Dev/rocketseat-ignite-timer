@@ -8,12 +8,11 @@ import {
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
-import { createContext, useState } from "react";
+import { useContext } from "react";
 
 import { NewCycleForm } from "./components/NewCycleForm";
 import { Countdown } from "./components/Countdown";
-
-
+import { CyclesContext } from "../../context/CyclesConext";
 
 // interface NewCycleFormData {
 //   task: string;
@@ -21,23 +20,6 @@ import { Countdown } from "./components/Countdown";
 // }
 
 // type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>; // TODO: para referencia uma variavel typescript se usa o typeof
-
-interface Cycle {
-  id: string;
-  task: string;
-  minutesAmount: number;
-  startDate: Date;
-  interruptDate?: Date;
-  finishDate?: Date;
-}
-
-interface CyclesContextProps {
-  activeCycle: Cycle | undefined,
-  activeCycleId: string | null,
-  amountSecondsPassed: number
-  markCurrentCyclesAsFinished: () => void
-  setSecondsPassed: (seconds: number) => void
-}
 
 const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, "Informe a tarefa"),
@@ -49,17 +31,9 @@ const newCycleFormValidationSchema = zod.object({
 
 type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>; // TODO: para referencia uma variavel typescript se usa o typeof
 
-
-
-export const CyclesContext = createContext({} as CyclesContextProps)
-
-
 export function Home() {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
-  const [amountSecondsPassed, setAmountSecondsPassed] = useState(0);
-
-
+  const { createNewCycle, interruptCurrentCycle, activeCycle } =
+    useContext(CyclesContext);
 
   const newCycleForm = useForm<NewCycleFormData>({
     resolver: zodResolver(newCycleFormValidationSchema),
@@ -69,53 +43,12 @@ export function Home() {
     },
   });
 
-  const { handleSubmit, watch, reset } = newCycleForm
-
-  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
-
-  function markCurrentCyclesAsFinished() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, finishDate: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-  }
+  const { handleSubmit, watch, reset } = newCycleForm;
 
   function handleCreateNewCycle(data: NewCycleFormData) {
-    const id = String(new Date().getTime());
-
-    const newCycle: Cycle = {
-      id,
-      task: data.task,
-      minutesAmount: data.minutesAmount,
-      startDate: new Date(),
-    };
-
-    setCycles((state) => [...state, newCycle]); // TODO: sempre que uma alteração de estado depender do valor anterior usar arrow function
-    setActiveCycleId(newCycle.id);
-    setAmountSecondsPassed(0);
+    /*ao chamar uma função a partir de um evento, nomeia a função com handle...*/
+    createNewCycle(data);
     reset();
-  }
-
-  function handleInterruptCycle() {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle.id === activeCycleId) {
-          return { ...cycle, interruptDate: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-    setActiveCycleId(null);
-  }
-
-  function setSecondsPassed(seconds: number) {
-    setAmountSecondsPassed(seconds)
   }
 
   const task = watch("task");
@@ -124,19 +57,15 @@ export function Home() {
   return (
     <HomeContainer>
       <form action="" onSubmit={handleSubmit(handleCreateNewCycle)}>
-        <CyclesContext.Provider value={{
-          activeCycle, markCurrentCyclesAsFinished,
-          activeCycleId, amountSecondsPassed, setSecondsPassed
-        }}>
-
-          <FormProvider {...newCycleForm} > {/*TODO: passa as propriedade de newCycleForm para o FormProvider que deixa as propriedades disponíveis em NewCycleForm*/}
-            <NewCycleForm />
-          </FormProvider>
-          <Countdown />
-        </CyclesContext.Provider>
+        <FormProvider {...newCycleForm}>
+          {" "}
+          {/*TODO: passa as propriedade de newCycleForm para o FormProvider que deixa as propriedades disponíveis em NewCycleForm*/}
+          <NewCycleForm />
+        </FormProvider>
+        <Countdown />
 
         {activeCycle ? (
-          <StopCountdownButton type="button" onClick={handleInterruptCycle}>
+          <StopCountdownButton type="button" onClick={interruptCurrentCycle}>
             <HandPalm size={24} />
             Interromper
           </StopCountdownButton>
@@ -148,5 +77,5 @@ export function Home() {
         )}
       </form>
     </HomeContainer>
-  )
+  );
 }
