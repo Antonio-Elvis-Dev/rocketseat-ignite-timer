@@ -63,7 +63,7 @@ const STATUS_COLORS = {
   green: "green-500",
 };
 interface StatusColor {
-  statusColor: keyof typeof STATUS_COLORS;
+  $statusColor: keyof typeof STATUS_COLORS;
 }
 export const Status = styled.span<StatusColor>`
   display: flex;
@@ -76,6 +76,6 @@ export const Status = styled.span<StatusColor>`
     height: 0.5rem;
     border-radius: 50%;
 
-    background: ${(props) => props.theme[STATUS_COLORS[props.statusColor]]};
+    background: ${(props) => props.theme[STATUS_COLORS[props.$statusColor]]};
   }
 `;
